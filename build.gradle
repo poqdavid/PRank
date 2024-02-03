@@ -1,0 +1,308 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven {
+            name = "forge"
+            url = "https://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "oss-sonatype-public"
+            url = "https://oss.sonatype.org/content/repositories/public/"
+        }
+        maven {
+            name = "Sponge"
+            url = "https://repo.spongepowered.org/maven"
+        }
+        maven {
+            name = "Gradle-Plugins"
+            url = "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+
+        //classpath group: 'com.github.jengelman.gradle.plugins', name: 'shadow', version: '6.+' //Gradle 6
+        //classpath group: 'gradle.plugin.com.github.jengelman.gradle.plugins', name: 'shadow', version: '7.0.0' //Gradle 7
+        //classpath group: 'gradle.plugin.com.github.johnrengelman', name: 'shadow', version: '7.1.2' //Gradle 7
+
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath "org.spongepowered:SpongeGradle:0.11.5"
+
+        classpath "gradle.plugin.org.cadixdev.gradle:licenser:0.6.1"
+        classpath "net.kyori:blossom:1.+"
+    }
+}
+
+apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "java"
+apply plugin: 'idea'
+apply plugin: 'signing'
+
+applyPlugin('net.minecraftforge.gradle')
+applyPlugin('org.cadixdev.licenser')
+applyPlugin('org.spongepowered.mixin')
+applyPlugin('org.spongepowered.gradle.plugin')
+
+applyPlugin('net.kyori.blossom')
+
+ext {
+    // General
+    prank_project_name = "PRank"
+    prank_project_id = "prank"
+    prank_project_url = "https://about.me/poqdavid"
+    prank_project_organization = "POQDavid"
+    prank_project_authors = "POQDavid"
+    prank_project_group = "io.github.poqdavid"
+    prank_project_description = "A simple and easy to use ranking system for Pixelmon"
+
+    // Version'z
+    prank_project_major = "3"
+    prank_project_minor = "1"
+    prank_project_api = "Sponge-7.4"
+    prank_project_suffix = "STABLE"
+
+    // Dependencies
+    spongeapi = "7.4.0"
+    spongemixin = "0.8.5-SNAPSHOT"
+    minecraft_version = "1.12.2"
+    forge_rundir = "run/forge"
+    forgeVersion = "1.12.2-14.23.5.2860"
+    mappings_channel = "snapshot"
+    mappings_version = "20171003-1.12"
+    validation = "2.0.1.Final"
+}
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+version = "$minecraft_version-$prank_project_major.$prank_project_minor-$prank_project_api-$prank_project_suffix" as Object
+group = "$prank_project_group" as Object
+description = "$prank_project_description"
+
+
+blossom {
+    replaceToken("@version@", "$prank_project_major.$prank_project_minor")
+    replaceToken("@description@", "$prank_project_description")
+    replaceToken("@id@", "$prank_project_id")
+    replaceToken("@name@", "$prank_project_name")
+    replaceToken("@organization@", "$prank_project_organization")
+    replaceToken("@authors@", "$prank_project_authors")
+    replaceToken("@url@", "$prank_project_url")
+}
+
+if (System.getenv().BUILD_NUMBER != null) {
+    version += "+${System.getenv().BUILD_NUMBER}"
+}
+
+
+mixin {
+    defaultObfuscationEnv "notch"
+}
+
+sourceSets {
+    main {
+        ext.refMap = "mixins.${rootProject.name.toLowerCase()}.refmap.json"
+    }
+}
+
+mixin {
+    add sourceSets.main, "mixins.${rootProject.name.toLowerCase()}.refmap.json"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        name = "Gradle-Plugins"
+        url = "https://plugins.gradle.org/m2"
+    }
+    maven {
+        name = "Sponge"
+        url = "https://repo.spongepowered.org/maven"
+    }
+    maven {
+        name = "Forge"
+        url = "https://files.minecraftforge.net/maven"
+    }
+    maven {
+        name = "Nucleus"
+        url = "https://repo.drnaylor.co.uk/artifactory/list/minecraft"
+    }
+    maven {
+        name = "QuickStart"
+        url = "https://repo.drnaylor.co.uk/artifactory/list/quickstart"
+    }
+    maven {
+        name = "JitPack"
+        url = "https://jitpack.io"
+    }
+    maven {
+        name = "CodeMC"
+        url = "https://repo.codemc.org/repository/maven-public"
+    }
+}
+
+configurations {
+    provided
+    compile.extendsFrom provided
+    compileJava.options.encoding = "UTF-8"
+    jar.archiveName = "${rootProject.name}-${project.version}.jar"
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'io.github.poqdavid.prank.PRank'
+    }
+}
+
+compileJava {
+    sourceCompatibility = targetCompatibility = "1.8"
+    options.encoding = 'UTF-8'
+    //options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    options.compilerArgs += [
+            '-Xlint:-processing',
+            '-Xlint:-deprecation',
+    ]
+    options.deprecation = true
+}
+
+dependencies {
+    //implementation group: 'org.bstats', name: 'bstats-sponge', version: "$bstats"
+    //shadow group: 'org.bstats', name: 'bstats-sponge', version: "$bstats"
+
+    minecraft "net.minecraftforge:forge:${getProjectProperty('forgeVersion')}"
+
+    implementation("org.spongepowered:spongeapi:$spongeapi")
+    annotationProcessor("org.spongepowered:spongeapi:$spongeapi")
+
+    implementation "org.spongepowered:mixin:$spongemixin"
+    compile "org.spongepowered:mixin:$spongemixin:processor"
+
+    annotationProcessor("org.spongepowered:mixin:$spongemixin:processor")
+
+    implementation("javax.validation:validation-api:$validation")
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+
+    compileOnly 'net.luckperms:api:5.4'
+    compileOnly fileTree(dir: 'libs', include: '*.jar')
+    compileOnly 'com.github.rojo8399:PlaceholderAPI:master-SNAPSHOT'
+}
+
+signing {
+    required { hasProperty("signing.keyId") }
+    sign configurations.archives
+    sign shadowJar
+}
+
+shadowJar {
+    archiveClassifier = ''
+    configurations = [project.configurations.shadow]
+
+    archiveName("${rootProject.name}-${project.version}.jar")
+
+    build {
+        dependsOn tasks.named("shadowJar")
+    }
+
+    finalizedBy 'reobfShadowJar'
+}
+
+minecraft {
+    mappings channel: "$mappings_channel", version: "$mappings_version"
+}
+
+license {
+    header = file('HEADER.txt')
+    newLine = true
+    ext {
+        name = "$prank_project_name"
+        organization = "$prank_project_organization"
+        url = "$prank_project_url"
+    }
+    include '**/*.java'
+    include '**/*.groovy'
+}
+
+processResources {
+    // this will ensure that this task is redone when the versions change.
+    inputs.property "version", "$prank_project_major.$prank_project_minor"
+    inputs.property "mcversion", "$minecraft_version"
+    inputs.property "modid", "$prank_project_id"
+    inputs.property "description", "$prank_project_description"
+    // replace stuff in mcmod.info, nothing else
+    from(sourceSets.main.resources.srcDirs) {
+        include "mcmod.info"
+
+        // replace version and mcversion
+        expand 'version': "$prank_project_major.$prank_project_minor", 'mcversion': "$minecraft_version"
+    }
+
+    // copy everything else, thats not the mcmod.info
+    from(sourceSets.main.resources.srcDirs) {
+        exclude "mcmod.info"
+    }
+    from 'LICENSE.txt'
+}
+
+task copyJar(type: Copy) {
+    def dir = new File('C:/Minecraft/Servers/Sponge/mods')
+    if (dir.exists()) {
+        from jar.archiveFile
+        into "${dir}"
+        project.logger.log(LogLevel.WARN, "Copied file: ${jar.archiveFile}")
+    } else {
+        project.logger.log(LogLevel.WARN, "Destination Dir: ${dir} Doesn't exists!!")
+    }
+}
+
+assemble.dependsOn shadowJar
+
+reobf {
+    shadowJar {}
+}
+
+artifacts {
+    archives shadowJar
+}
+
+tasks.shadowJar.dependsOn('reobfJar')
+
+jar.finalizedBy('reobfJar')
+
+build.finalizedBy('copyJar')
+
+/*artifacts {
+    archives shadowJar
+}
+
+tasks.shadowJar.dependsOn('reobfJar')
+
+jar.finalizedBy('reobfJar')
+
+build.finalizedBy('copyJar')*/
+
+void applyPlugin(String PluginId) {
+    if (project.getPlugins().hasPlugin(PluginId)) {
+        project.logger.log(LogLevel.WARN, "Plugin ${PluginId} already applied")
+    } else {
+        apply plugin: PluginId
+    }
+}
+
+String getProjectProperty(String propertyName) {
+    String temp = "null"
+    if (hasProperty(propertyName)) {
+        temp = this.properties.get(propertyName)
+        project.logger.log(LogLevel.WARN, "Found property: ${propertyName} value: ${temp}")
+    } else {
+        project.logger.log(LogLevel.ERROR, "Property (${propertyName}) not found!")
+    }
+    return temp
+}
+
+idea {
+    module {
+        inheritOutputDirs = true
+    }
+}
